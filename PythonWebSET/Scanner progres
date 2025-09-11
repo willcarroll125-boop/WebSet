@@ -18,7 +18,7 @@ def scan_file(file):
     issues.extend(InsecureDesign(html_clean))
     issues.extend(SecurityMisconfiguration(html_clean))
     issues.extend(Vulnerable_and_Outdated_Components(html_clean))
-    issues.extend(Idenification_and_Authentication_failures(html_clean))
+    issues.extend(Identification_and_Authentication_failures(html_clean))
     issues.extend(Software_and_Data_integrity_Failures(html_clean))
     issues.extend(Security_logging_and_monitoring_failures(html_clean))
     issues.extend(SSRF(html_clean))
@@ -51,7 +51,6 @@ def BrokenAccessControl(html_clean):
 
             })
 
-        if
 
 
 
@@ -59,10 +58,28 @@ def BrokenAccessControl(html_clean):
 
     return issues
 
-def cryptographicFailures(html_clean):
+def CryptographicFailures(html_clean):
+    issues = []
+    CF = html_clean.find_all("script")
+    for C in CF:
+        code = C.get_text() or ""
+        lower = code.lower()
+        for algorithm in ["md5", "sha1", "des", "3des", "rc4"]:
+            if algorithm in lower:
+                issues.append({"Threat": "Cryptographic Failure", "Threat Severity": "High", "Message": f"Depreciated algorithm detected" '{algorithm.upper()}'})
 
+        if "btoa(" in lower or "atob(" in lower:
+            issues.append({"Threat": "Cryptographic Failure", "Threat Severity": "Medium",
+                       "Message": "Use of bota()/atob() has been detected."})
+        if "math.random(" in lower:
+            issues.append({"Threat": "Cryptographic Failure", "Threat Severity": "Medium",
+                       "Message": "math.random() has been used"})
 
+        if "localstorage" in lower or "sessionstorage" in lower:
+            issues.append({"Threat": "Cryptographic Failure", "Threat Severity": "Medium", "Message": "Web storage used, review if data stored is sensitive."})
 
+        if re.search(r"")
+    return issues
 ## END of Vulnerability Scanner section
 if __name__ == "__main__":
     output = scan_file("sample.html")
