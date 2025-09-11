@@ -8,10 +8,12 @@ def scan_file(file):
 
     issues = []
     issues.extend(BrokenAccessControl(html_clean))
+    issues.extend(CryptographicFailures(html_clean))
     return {"issues": issues}
 
+#@ francesca when you choose a vulnerability to start defining add it beneath line11 from the list below
 """
-    issues.extend(CryptographicFailures(html_clean))
+   
     issues.extend(sql_Injection(html_clean))
     issues.extend(InsecureDesign(html_clean))
     issues.extend(SecurityMisconfiguration(html_clean))
@@ -49,13 +51,17 @@ def BrokenAccessControl(html_clean):
 
             })
 
-        if 
+        if
 
 
 
 
 
-        return issues
+    return issues
+
+def cryptographicFailures(html_clean):
+
+
 
 ## END of Vulnerability Scanner section
 if __name__ == "__main__":
