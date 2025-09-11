@@ -2,7 +2,6 @@ import json
 import re
 from bs4 import BeautifulSoup
 
-
 def scan_file(file):
     with open(file, "r") as f:
         html_code = f.read()
@@ -18,7 +17,6 @@ def scan_file(file):
 
 # @ francesca when you choose a vulnerability to start defining add it beneath line11 from the list below
 """
-    issues.extend(InsecureDesign(html_clean))
     issues.extend(SecurityMisconfiguration(html_clean))
     issues.extend(Vulnerable_and_Outdated_Components(html_clean))
     issues.extend(Identification_and_Authentication_failures(html_clean))
