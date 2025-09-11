@@ -89,20 +89,19 @@ def sql_Injection(html_clean):
     for script in html_clean.find_all("script"):
         code = script.get_text().lower()
         sql_patterns = [
-            r"select\s+.+\s+from",     # SELECT ... FROM
-            r"insert\s+into",          # INSERT INTO
-            r"update\s+\w+\s+set",     # UPDATE table SET
-            r"delete\s+from",          # DELETE FROM
-            r"drop\s+table",           # DROP TABLE
-            r"union\s+select",         # UNION SELECT
+            r"select\s+.+\s+from",     
+            r"insert\s+into",          
+            r"update\s+\w+\s+set",     
+            r"delete\s+from",      
+            r"drop\s+table",       
+            r"union\s+select",        
         ]
         for pattern in sql_patterns:
             if re.search(pattern, code):
                 issues.append({
                     "Threat": "SQL Injection",
                     "Threat Severity": "High",
-                    "Message": f"Possible SQL statement found in script: '{pattern}'"
-                })
+                    "Message": f"Possible SQL statement found in script: '{pattern}'"})
     for tag in html_clean.find_all(True):
         for attr, val in tag.attrs.items():
             val_str = str(val).lower()
@@ -111,8 +110,7 @@ def sql_Injection(html_clean):
                     issues.append({
                         "Threat": "SQL Injection",
                         "Threat Severity": "Medium",
-                        "Message": f"SQL-like text found in attribute '{attr}'."
-                    })
+                        "Message": f"SQL-like text found in attribute '{attr}'."})
     return issues
 
 def InsecureDesign(html_clean):
