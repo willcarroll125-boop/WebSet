@@ -12,16 +12,17 @@ def scan_file(file):
     issues.extend(CryptographicFailures(html_clean))
     issues.extend(sql_Injection(html_clean))
     issues.extend(InsecureDesign(html_clean))
+    issues.extend(SecurityMisconfiguration(html_clean))
+    issues.extend(Identification_and_Authentication_failures(html_clean))
+    issues.extend(SSRF(html_clean))
+
     return {"issues": issues}
 
 #@ francesca when you choose a vulnerability to start defining add it beneath line11 from the list below
 """
-    issues.extend(SecurityMisconfiguration(html_clean))
     issues.extend(Vulnerable_and_Outdated_Components(html_clean))
-    issues.extend(Identification_and_Authentication_failures(html_clean))
     issues.extend(Software_and_Data_integrity_Failures(html_clean))
     issues.extend(Security_logging_and_monitoring_failures(html_clean))
-    issues.extend(SSRF(html_clean))
 
     result = {
         "issues": [{"Threat": "id", "Threat Severity": "High|Medium|low", "Message": "Explanation"
@@ -146,6 +147,63 @@ def InsecureDesign(html_clean):
                 "Message": "Sensitive info mentioned in HTML comments." })
     return issues
 
+def SecurityMisconfiguration(html_clean):
+    issues = []
+    for script in html_clean.find_all("script"):
+        code = script.get_text().lower()
+        if "disable security" in code or "allow all origins" in code:
+            issues.append({
+                "Threat": "Security Misconfiguration",
+                "Threat Severity": "High",
+                "Message": "Code appears to disable security restrictions."
+            })
+    meta_tags = [m.get("http-equiv", "").lower() for m in html_clean.find_all("meta")]
+    if not any("content-security-policy" in m for m in meta_tags):
+        issues.append({
+            "Threat": "Security Misconfiguration",
+            "Threat Severity": "Medium",
+            "Message": "No Content-Security-Policy meta tag detected."})
+    return issues
+
+def Identification_and_Authentication_failures(html_clean):
+    issues = []
+    for script in html_clean.find_all("script"):
+        code = script.get_text().lower()
+        if re.search(r"(username|user|login|password)\s*=\s*['\"]", code):
+            issues.append({
+                "Threat": "Identification & Authentication Failures",
+                "Threat Severity": "High",
+                "Message": "Possible hard-coded username or password."
+            })
+        if "basic auth" in code or "default credentials" in code:
+            issues.append({
+                "Threat": "Identification & Authentication Failures",
+                "Threat Severity": "Medium",
+                "Message": "Basic or default authentication found in script."
+            })
+    for inp in html_clean.find_all("input"):
+        if inp.get("type", "").lower() == "password" and not inp.get("autocomplete"):
+            issues.append({
+                "Threat": "Identification & Authentication Failures",
+                "Threat Severity": "Low",
+                "Message": "Password field missing 'autocomplete' attribute."})
+    return issues
+
+def SSRF(html_clean):
+    issues = []  # List to store findings
+    risky = ["localhost", "127.0.0.1", "169.254.169.254", "metadata", "internal"]
+
+    # Check scripts, forms, and links for risky references
+    for tag in html_clean.find_all(["script", "form", "a"]):
+        text = (tag.get("href") or tag.get("action") or tag.get_text() or "").lower()
+        for r in risky:
+            if r in text:
+                sev = "High" if r == "localhost" else "Critical" if r == "169.254.169.254" else "Medium"
+                issues.append({
+                    "Threat": "SSRF",
+                    "Threat Severity": sev,
+                    "Message": f"Suspicious internal reference detected: {r}"})
+    return issues
 
 ## END of Vulnerability Scanner section
 def csv_output(results, filename="WebSETResults.csv"):
