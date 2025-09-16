@@ -59,7 +59,7 @@ for b_text in buttons:
         btn.bind("<Button-1>", lambda e: root.destroy())
 
 
-# Main section for dash 
+# Main section for dash
 main_area = tk.Frame(root, bg="#f4f6f9")
 main_area.pack(side="right", expand=True, fill="both")
 
@@ -149,5 +149,5 @@ def run_scan():
     canvas.draw()
     canvas.get_tk_widget().pack(fill="both", expand=True)
 
-# start
+# ---------------- Start ----------------
 root.mainloop()
