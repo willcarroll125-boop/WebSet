@@ -1,1 +1,382 @@
+import os
+import json
+import re
+import csv
+from bs4 import BeautifulSoup
+from collections import Counter
+import matplotlib.pyplot as plt
+from pdfgen import generate_pdf
 
+def scan_file(file):
+    ext = os.path.splitext(file)[1].lower()
+    issues = []
+
+    if ext in [".html", ".htm"]: #HTML
+        with open(file, "r", encoding="utf-8") as f:
+            html_code = f.read()
+        html_clean = BeautifulSoup(html_code, "html.parser")
+
+        issues.extend(BrokenAccessControl(html_clean))
+        issues.extend(sql_Injection(html_clean))
+        issues.extend(SecurityMisconfiguration(html_clean))
+        issues.extend(Identification_and_Authentication_failures(html_clean))
+        issues.extend(Vulnerable_and_Outdated_Components(html_clean))
+
+    elif ext in [".java", ".js"]: #JAVA
+        with open(file, "r", encoding="utf-8") as f:
+            code = f.read()
+
+        issues.extend(BrokenAccessControl_JS(code))
+        issues.extend(CryptographicFailures_JS(code))
+        issues.extend(sql_Injection_JS(code))
+        issues.extend(SecurityMisconfiguration_JS(code))
+        issues.extend(Identification_and_Authentication_failures_JS(code))
+        issues.extend(Software_and_Data_Integrity_JS(code))
+        issues.extend(Security_Logging_and_Monitoring_JS(code))
+        issues.extend(SSRF_JS(code))
+
+    return {"issues": issues}
+
+
+# HTML scanners
+
+def BrokenAccessControl(html_clean):
+    issues = []
+    for div in html_clean.find_all("div", id=True):
+        if "admin" in div.get("id", "").lower():
+            issues.append({
+                "Threat": "Broken Access Control","Threat Severity": "High","Message": "Hidden admin functionality found in page."})
+    for inp in html_clean.find_all("input", {"type": "hidden"}):
+        if any(k in inp.get("name","").lower() for k in ["key","token","secret","api"]):
+            issues.append({
+                "Threat": "Broken Access Control","Threat Severity": "High","Message": "Hardcoded credential or API key found in form."})
+    for a in html_clean.find_all("a", href=True):
+        if re.search(r"/user/\w+|/admin/\w+", a["href"].lower()):
+            issues.append({
+                "Threat": "Broken Access Control","Threat Severity": "Medium","Message": f"Direct object reference in link: {a['href']}"})
+    return issues
+
+def sql_Injection(html_clean):
+    issues = []
+    for div in html_clean.find_all("div", id=True):
+        if "{{" in div.get_text() or "{{" in div.decode_contents():
+            issues.append({"Threat": "SQL Injection", "Threat Severity": "High", "Message": "Direct user input rendering detected in <div>."})
+    for script in html_clean.find_all("script"):
+        code = script.get_text().lower()
+        if "{{" in code:
+            issues.append({"Threat": "SQL Injection", "Threat Severity": "High", "Message": "Template placeholder detected in <script> — possible injection."})
+
+    for tag in html_clean.find_all(True):
+        for attr, val in tag.attrs.items():
+            if isinstance(val, list):
+                val = " ".join(val)
+            if "{{" in str(val):
+                sev = "High" if attr in ["src", "href", "onerror", "onclick"] else "Medium"
+                issues.append({"Threat": "SQL Injection", "Threat Severity": sev, "Message": f"Unsafe template placeholder in attribute '{attr}' of <{tag.name}>."})
+    return issues
+
+def SecurityMisconfiguration(html_clean):
+    issues = []
+    for script in html_clean.find_all("script"):
+        code = script.get_text().lower()
+        if "disable security" in code or "allow all origins" in code:
+            issues.append({"Threat": "Security Misconfiguration", "Threat Severity": "High", "Message": "Code appears to disable security restrictions."})
+    meta_tags = [m.get("http-equiv", "").lower() for m in html_clean.find_all("meta")]
+    if not any("content-security-policy" in m for m in meta_tags):
+        issues.append({"Threat": "Security Misconfiguration", "Threat Severity": "Medium", "Message": "No Content-Security-Policy meta tag detected."})
+    return issues
+
+def Identification_and_Authentication_failures(html_clean):
+    issues = []
+    for script in html_clean.find_all("script"):
+        code = script.get_text().lower()
+        if re.search(r"(username|user|login|password)\s*=\s*['\"]", code):
+            issues.append({ "Threat": "Identification & Authentication Failures", "Threat Severity": "High", "Message": "Possible hard-coded username or password."})
+        if "basic auth" in code or "default credentials" in code:
+            issues.append({"Threat": "Identification & Authentication Failures", "Threat Severity": "Medium", "Message": "Basic or default authentication found in script."})
+    for inp in html_clean.find_all("input"):
+        if inp.get("type", "").lower() == "password" and not inp.get("autocomplete"):
+            issues.append({"Threat": "Identification & Authentication Failures", "Threat Severity": "Low", "Message": "Password field missing 'autocomplete' attribute."})
+    return issues
+
+def Vulnerable_and_Outdated_Components(html_clean):
+    issues = []
+    for script in html_clean.find_all("script", src=True):
+        src = script["src"].lower()
+        if "jquery-1." in src or "jquery-2." in src:
+            issues.append({"Threat":"Vulnerable/Outdated Component","Threat Severity":"High","Message":"Old jQuery detected"})
+        if "angular-1." in src:
+            issues.append({"Threat":"Vulnerable/Outdated Component","Threat Severity":"High","Message":"Old AngularJS detected"})
+        if "lodash@3" in src:
+            issues.append({"Threat":"Vulnerable/Outdated Component","Threat Severity":"Medium","Message":"Old Lodash detected"})
+        if "node_modules" in src or "dev-dependency" in src:
+            issues.append({"Threat":"Vulnerable/Outdated Component","Threat Severity":"High","Message":"Dev dependency in production"})
+        if src.startswith("http") and not script.has_attr("integrity"):
+            issues.append({"Threat":"Vulnerable/Outdated Component","Threat Severity":"Medium","Message":"CDN script without integrity"})
+    return issues
+
+
+# JAVA scanners
+
+def BrokenAccessControl_JS(code):
+    issues = []
+
+    if re.search(r"user\.role\s*===\s*['\"]admin['\"]", code, re.IGNORECASE):
+        issues.append({"Threat": "Broken Access Control", "Threat Severity": "High", "Message": "Client-side role check detected — possible broken access control."})
+
+    if re.search(r"(API_KEY|authToken|token|secret)\s*=\s*['\"].+['\"]", code, re.IGNORECASE):
+        issues.append({"Threat": "Broken Access Control", "Threat Severity": "High", "Message": "Hardcoded credential or API key detected in code."})
+
+    if re.search(r"/(api|admin)/\w+", code, re.IGNORECASE):
+        issues.append({"Threat": "Broken Access Control", "Threat Severity": "Medium", "Message": "Direct object reference detected — possible insecure access."})
+
+    if re.search(r"function\s+\w+\(.*\)\s*\{[^}]*return\s+.*\}", code, re.IGNORECASE):
+        if re.search(r"(currentUser|targetUser).*id", code, re.IGNORECASE):
+            issues.append({"Threat": "Broken Access Control", "Threat Severity": "Medium", "Message": "Role-based logic detected — missing server-side check possible."})
+
+    if re.search(r"urlParams\.get\(['\"]\w+['\"]\)\s*===\s*['\"]true['\"]", code, re.IGNORECASE):
+        issues.append({"Threat": "Broken Access Control", "Threat Severity": "Medium", "Message": "Insecure parameter handling detected."})
+
+    return issues
+
+def CryptographicFailures_JS(code):
+    issues = []
+    weak_algos = ["md5", "sha1", "des", "3des", "rc4"]
+
+    for algo in weak_algos:
+        if re.search(rf"\b{algo}\b", code, re.IGNORECASE):
+            issues.append({"Threat": "Cryptographic Failure", "Threat Severity": "High", "Message": f"Weak algorithm: {algo.upper()}"})
+
+    if re.search(r"\bbtoa\(|\batob\(", code, re.IGNORECASE):
+        issues.append({"Threat": "Cryptographic Failure", "Threat Severity": "Medium", "Message": "btoa()/atob() used — not secure"})
+
+    if re.search(r"(encryptionKey|salt|key|secret)\s*=\s*['\"].+['\"]", code, re.IGNORECASE):
+        issues.append({"Threat": "Cryptographic Failure", "Threat Severity": "High", "Message": "Hardcoded key/salt detected"})
+
+    if re.search(r"\bMath\.random\(|\bDate\.now\(", code, re.IGNORECASE):
+        issues.append({"Threat": "Cryptographic Failure", "Threat Severity": "Medium", "Message": "Weak random generation"})
+
+    if re.search(r"\blocalStorage\.setItem\(|\bsessionStorage\.setItem\(", code, re.IGNORECASE):
+        issues.append({"Threat": "Cryptographic Failure", "Threat Severity": "Medium", "Message": "Sensitive data stored in web storage"})
+
+    if re.search(r"\bfetch\(.+http://", code, re.IGNORECASE):
+        issues.append({"Threat": "Cryptographic Failure", "Threat Severity": "High", "Message": "Sensitive data sent over HTTP"})
+
+    return issues
+
+def sql_Injection_JS(code):
+    issues = []
+
+    if re.search(r"select\s+.+\s+from", code, re.IGNORECASE):
+        issues.append({"Threat": "SQL Injection", "Threat Severity": "High", "Message": "Possible SELECT statement built from user input"})
+
+    if re.search(r"insert\s+into", code, re.IGNORECASE):
+        issues.append({"Threat": "SQL Injection", "Threat Severity": "High", "Message": "Possible INSERT statement built from user input"})
+
+    if re.search(r"update\s+\w+\s+set", code, re.IGNORECASE):
+        issues.append({"Threat": "SQL Injection", "Threat Severity": "High", "Message": "Possible UPDATE statement built from user input"})
+
+    if re.search(r"delete\s+from", code, re.IGNORECASE):
+        issues.append({"Threat": "SQL Injection", "Threat Severity": "High", "Message": "Possible DELETE statement built from user input"})
+
+    if re.search(r"drop\s+table", code, re.IGNORECASE):
+        issues.append({"Threat": "SQL Injection", "Threat Severity": "High", "Message": "Possible DROP TABLE statement detected"})
+
+    if re.search(r"union\s+select", code, re.IGNORECASE):
+        issues.append({"Threat": "SQL Injection", "Threat Severity": "High", "Message": "Possible UNION SELECT statement detected"})
+
+    if re.search(r"document\.getElementById\s*\(", code, re.IGNORECASE):
+        issues.append({"Threat": "XSS / DOM Injection", "Threat Severity": "Medium", "Message": "Direct DOM manipulation detected via getElementById"})
+
+    if re.search(r"\.innerHTML\s*=", code, re.IGNORECASE):
+        issues.append({"Threat": "XSS / DOM Injection", "Threat Severity": "Medium", "Message": "Possible DOM injection via innerHTML assignment"})
+
+    if re.search(r"\.outerHTML\s*=", code, re.IGNORECASE):
+        issues.append({"Threat": "XSS / DOM Injection", "Threat Severity": "Medium", "Message": "Possible DOM injection via outerHTML assignment"})
+
+    if re.search(r"\.html\s*\(", code, re.IGNORECASE):
+        issues.append({"Threat": "XSS / DOM Injection", "Threat Severity": "Medium", "Message": "Possible DOM injection via jQuery html()"})
+
+    if re.search(r"eval\s*\(", code, re.IGNORECASE):
+        issues.append({"Threat": "Code Injection", "Threat Severity": "High", "Message": "eval() usage detected — possible code injection"})
+
+    if re.search(r"Function\s*\(", code, re.IGNORECASE):
+        issues.append({"Threat": "Code Injection", "Threat Severity": "High", "Message": "Function() constructor usage detected — possible code injection"})
+
+    if re.search(r"setTimeout\s*\(", code, re.IGNORECASE):
+        issues.append({"Threat": "Code Injection", "Threat Severity": "High", "Message": "setTimeout() with dynamic code detected"})
+
+    if re.search(r"exec\s*\(", code, re.IGNORECASE):
+        issues.append({"Threat": "Command Injection", "Threat Severity": "High", "Message": "exec() usage detected — possible command injection"})
+
+    if re.search(r"system\s*\(", code, re.IGNORECASE):
+        issues.append({"Threat": "Command Injection", "Threat Severity": "High", "Message": "system() usage detected — possible command injection"})
+
+    if re.search(r"\$\{.+\}", code, re.IGNORECASE):
+        issues.append({"Threat": "Template Injection", "Threat Severity": "Medium", "Message": "Possible template injection detected"})
+
+    return issues
+
+def SecurityMisconfiguration_JS(code):
+    issues = []
+
+    if re.search(r"authenticateUser\s*\(", code, re.IGNORECASE):
+        issues.append({"Threat": "Security Misconfiguration / Logic Flaw", "Threat Severity": "High", "Message": "No rate limiting detected — direct authentication without throttling"})
+
+    if re.search(r"processPayment\s*\(", code, re.IGNORECASE):
+        issues.append({"Threat": "Security Misconfiguration / Logic Flaw", "Threat Severity": "High", "Message": "Insufficient validation detected — missing upper limit or currency check"})
+
+    if re.search(r"applyDiscount\s*\(", code, re.IGNORECASE):
+        issues.append({"Threat": "Security Misconfiguration / Logic Flaw", "Threat Severity": "Medium", "Message": "Potential discount calculation flaw — missing validation of discount range"})
+
+    if re.search(r"content-security-policy|hsts", code, re.IGNORECASE):
+        issues.append({"Threat": "Security Misconfiguration / Logic Flaw", "Threat Severity": "Medium", "Message": "Missing security headers detected — CSP or HSTS not implemented"})
+
+    if re.search(r"console\.log\s*\(|alert\s*\(", code, re.IGNORECASE):
+        issues.append({"Threat": "Security Misconfiguration / Logic Flaw", "Threat Severity": "High", "Message": "Sensitive error information disclosure — console.log or alert used"})
+
+    return issues
+
+def Identification_and_Authentication_failures_JS(code):
+    issues = []
+
+    if re.search(r"password\.length\s*<\s*\d+", code, re.IGNORECASE):
+        issues.append({"Threat": "Weak Password Validation", "Threat Severity": "High", "Message": "Weak password length check detected"})
+
+    if re.search(r"/\^\.\*\[a-z\].+\$/", code, re.IGNORECASE):
+        issues.append({"Threat": "Weak Password Validation", "Threat Severity": "High", "Message": "Weak password regex detected"})
+
+    if re.search(r"localStorage\.setItem\(['\"]sessionToken", code, re.IGNORECASE):
+        issues.append({"Threat": "Insecure Session Handling", "Threat Severity": "Medium", "Message": "Session token stored in localStorage"})
+
+    if re.search(r"sessionStorage\.setItem", code, re.IGNORECASE):
+        issues.append({"Threat": "Insecure Session Handling", "Threat Severity": "Medium", "Message": "Session data stored insecurely"})
+
+    if re.search(r"function\s+\w+\s*\(.*\)\s*\{[^}]*performOperation", code, re.IGNORECASE):
+        issues.append({"Threat": "Missing Authentication Checks", "Threat Severity": "High", "Message": "Operation without authentication check detected"})
+
+    if re.search(r"password\s*=\s*['\"].+['\"]", code, re.IGNORECASE):
+        issues.append({"Threat": "Password in Client-side Code", "Threat Severity": "High", "Message": "Password hardcoded in client-side code"})
+
+    if re.search(r"btoa\(", code, re.IGNORECASE):
+        issues.append({"Threat": "Insecure Token Handling", "Threat Severity": "Medium", "Message": "Weak token generation detected"})
+
+    return issues
+
+def Software_and_Data_Integrity_JS(code):
+    issues = []
+
+    if re.search(r"<script\s+src=.*>", code, re.IGNORECASE) and not re.search(r"integrity\s*=", code, re.IGNORECASE):
+        issues.append({"Threat": "Missing Integrity Checks", "Threat Severity": "High", "Message": "External script without Subresource Integrity (SRI) detected"})
+
+    if re.search(r"JSON\.parse\s*\(", code, re.IGNORECASE):
+        issues.append({"Threat": "Unsafe Deserialization", "Threat Severity": "High", "Message": "Deserialization of untrusted input detected"})
+
+    if re.search(r"eval\s*\(", code, re.IGNORECASE):
+        issues.append({"Threat": "Unsafe Deserialization", "Threat Severity": "High", "Message": "eval() usage detected — unsafe deserialization possible"})
+
+    if re.search(r"require\s*\(\s*\w+\s*\)", code, re.IGNORECASE):
+        issues.append({"Threat": "Untrusted Plugin Loading", "Threat Severity": "High", "Message": "Dynamic plugin loading detected"})
+
+    if re.search(r"document\.createElement\s*\(\s*['\"]script['\"]\s*\)", code, re.IGNORECASE):
+        issues.append({"Threat": "Dynamic Script Loading", "Threat Severity": "Medium", "Message": "Script dynamically created from untrusted source"})
+
+    return issues
+
+def Security_Logging_and_Monitoring_JS(code):
+    issues = []
+
+    if re.search(r"function\s+login\s*\(", code, re.IGNORECASE) and not re.search(r"log|logger|audit", code, re.IGNORECASE):
+        issues.append({"Threat": "Missing Security Logging", "Threat Severity": "High", "Message": "Login function without security logging detected"})
+
+    if re.search(r"console\.(log|error)\s*\(", code, re.IGNORECASE) and re.search(r"password|user", code, re.IGNORECASE):
+        issues.append({"Threat": "Information Disclosure in Logs", "Threat Severity": "High", "Message": "Sensitive information logged to console"})
+
+    if re.search(r"function\s+transferMoney\s*\(", code, re.IGNORECASE) and not re.search(r"log|logger|audit", code, re.IGNORECASE):
+        issues.append({"Threat": "Missing Monitoring", "Threat Severity": "High", "Message": "Sensitive operation without logging detected"})
+
+    if re.search(r"function\s+\w+\s*\(", code, re.IGNORECASE) and re.search(r"api|rate", code, re.IGNORECASE) and not re.search(r"log|logger|audit", code, re.IGNORECASE):
+        issues.append({"Threat": "Missing Rate Limiting Logs", "Threat Severity": "Medium", "Message": "API function without usage logging detected"})
+
+    return issues
+
+def SSRF_JS(code):
+    issues = []
+
+    if re.search(r"fetch\s*\(\s*url\s*\)", code, re.IGNORECASE):
+        issues.append({"Threat": "Server-Side Request Forgery", "Threat Severity": "High", "Message": "User-controlled URL fetch without validation"})
+
+    if re.search(r"function\s+proxyRequest\s*\(", code, re.IGNORECASE) and re.search(r"axios\.get", code, re.IGNORECASE):
+        issues.append({"Threat": "Server-Side Request Forgery", "Threat Severity": "High", "Message": "Proxy request to user-controlled URL without validation"})
+
+    if re.search(r"new\s+Image\s*\(", code, re.IGNORECASE) and re.search(r"\.src\s*=", code, re.IGNORECASE):
+        issues.append({"Threat": "Server-Side Request Forgery", "Threat Severity": "Medium", "Message": "User-controlled image source loading detected"})
+
+    if re.search(r"function\s+callWebhook\s*\(", code, re.IGNORECASE) and re.search(r"fetch\(", code, re.IGNORECASE):
+        issues.append({"Threat": "Server-Side Request Forgery", "Threat Severity": "High", "Message": "Webhook call with user-controlled URL detected"})
+
+    return issues
+
+
+## END of Vulnerability Scanner section - Start of Report Writing Section ##
+def csv_output(results, filename="WebSETResults.csv"):
+    with open(filename, "w", newline="") as csvfile:
+        fieldnames = ["Threat", "Threat Severity", "Message"]
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+        writer.writeheader()
+        for issue in results["issues"]:
+            writer.writerow(issue)
+
+def severityGraph(results):
+    amount = Counter()
+    for issue in results.get("issues", []):
+        severity = (issue.get("Threat Severity") or "").strip()
+        if severity:
+            amount[severity] += 1
+    return amount
+
+def threatCount(results):
+    amount = Counter()
+    for issues in results.get("issues", []):
+        name = (issues.get("Threat") or "").strip()
+        if name:
+            amount[name] += 1
+    return amount
+
+def sevBarGraph(results, out_path= "sevBarGraph.png"):
+    counts = severityGraph(results)
+    if not counts:
+        print("No vulnerable components found")
+        return
+    labels = list(counts.keys())
+    values = list(counts.values())
+    plt.bar(labels, values)
+    plt.title("Findings by Severity")
+    plt.xlabel("Severity")
+    plt.ylabel("Count")
+    plt.savefig(out_path)
+    plt.close()
+
+def threatCountGraph(results, out_path= "threatCountGraph.png"):
+    counts = threatCount(results)
+    if not counts:
+        print("No vulnerable components found")
+        return
+    labels = list(counts.keys())
+    values = list(counts.values())
+    plt.bar(labels, values)
+    plt.title("Findings by Threat Type")
+    plt.xlabel("Threat")
+    plt.ylabel("Count")
+    plt.savefig(out_path)
+    plt.close()
+
+if __name__ == "__main__":
+    output = scan_file("sample.html")
+    print(json.dumps(output, indent=4))
+    csv_output(output, "WebSETResults.csv")
+    sevBarGraph(output, "severity_bar.png")
+    threatCountGraph(output, "threats_bar.png")
+    generate_pdf(output, "WebSET_Report.pdf", "severity_bar.png", "threats_bar.png")
+
+    print("Results written to file")
