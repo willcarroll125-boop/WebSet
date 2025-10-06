@@ -1,0 +1,11 @@
+<!-- 1. Direct user input rendering -->
+<div id="userContent">{{userInput}}</div>
+<script>var data = "{{untrustedData}}";</script>
+
+<!-- 2. Unsafe attributes -->
+<img src="{{userURL}}" onerror="alert('xss')">
+<a href="javascript:{{userCode}}">Click</a>
+
+<!-- 3. Form injection points -->
+<input type="text" value="{{userValue}}">
+}

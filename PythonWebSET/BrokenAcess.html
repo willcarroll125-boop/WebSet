@@ -1,0 +1,11 @@
+<!-- 1. Hidden admin controls -->
+<div id="adminPanel" style="display:none;">
+    <button onclick="deleteAllUsers()">Delete All</button>
+</div>
+
+<!-- 2. Hardcoded credentials in forms -->
+<input type="hidden" name="api_key" value="secret123">
+
+<!-- 3. Direct object references in links -->
+<a href="/user/profile/123">View Profile</a>
+<a href="/admin/edit-user?id=456">Edit User</a>
