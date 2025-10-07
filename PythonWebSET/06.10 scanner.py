@@ -17,7 +17,7 @@ def scan_file(file):
         html_clean = BeautifulSoup(html_code, "html.parser")
 
         issues.extend(BrokenAccessControl(html_clean))
-        issues.extend(sql_Injection(html_clean))
+        issues.extend(Injection(html_clean))
         issues.extend(SecurityMisconfiguration(html_clean))
         issues.extend(Identification_and_Authentication_failures(html_clean))
         issues.extend(Vulnerable_and_Outdated_Components(html_clean))
@@ -28,7 +28,7 @@ def scan_file(file):
 
         issues.extend(BrokenAccessControl_JS(code))
         issues.extend(CryptographicFailures_JS(code))
-        issues.extend(sql_Injection_JS(code))
+        issues.extend(Injection_JS(code))
         issues.extend(SecurityMisconfiguration_JS(code))
         issues.extend(Identification_and_Authentication_failures_JS(code))
         issues.extend(Software_and_Data_Integrity_JS(code))
@@ -56,7 +56,7 @@ def BrokenAccessControl(html_clean):
                 "Threat": "Broken Access Control","Threat Severity": "Medium","Message": f"Direct object reference in link: {a['href']}"})
     return issues
 
-def sql_Injection(html_clean):
+def Injection(html_clean):
     issues = []
     for div in html_clean.find_all("div", id=True):
         if "{{" in div.get_text() or "{{" in div.decode_contents():
@@ -164,7 +164,7 @@ def CryptographicFailures_JS(code):
 
     return issues
 
-def sql_Injection_JS(code):
+def Injection_JS(code):
     issues = []
 
     if re.search(r"select\s+.+\s+from", code, re.IGNORECASE):
@@ -287,16 +287,16 @@ def Security_Logging_and_Monitoring_JS(code):
     issues = []
 
     if re.search(r"function\s+login\s*\(", code, re.IGNORECASE) and not re.search(r"log|logger|audit", code, re.IGNORECASE):
-        issues.append({"Threat": "Missing Security Logging", "Threat Severity": "High", "Message": "Login function without security logging detected"})
+        issues.append({"Threat": "Security Logging and Monitoring", "Threat Severity": "High", "Message": "Login function without security logging detected"})
 
     if re.search(r"console\.(log|error)\s*\(", code, re.IGNORECASE) and re.search(r"password|user", code, re.IGNORECASE):
-        issues.append({"Threat": "Information Disclosure in Logs", "Threat Severity": "High", "Message": "Sensitive information logged to console"})
+        issues.append({"Threat": "Security Logging and Monitoring", "Threat Severity": "High", "Message": "Sensitive information logged to console"})
 
     if re.search(r"function\s+transferMoney\s*\(", code, re.IGNORECASE) and not re.search(r"log|logger|audit", code, re.IGNORECASE):
-        issues.append({"Threat": "Missing Monitoring", "Threat Severity": "High", "Message": "Sensitive operation without logging detected"})
+        issues.append({"Threat": "Security Logging and Monitoring", "Threat Severity": "High", "Message": "Sensitive operation without logging detected"})
 
     if re.search(r"function\s+\w+\s*\(", code, re.IGNORECASE) and re.search(r"api|rate", code, re.IGNORECASE) and not re.search(r"log|logger|audit", code, re.IGNORECASE):
-        issues.append({"Threat": "Missing Rate Limiting Logs", "Threat Severity": "Medium", "Message": "API function without usage logging detected"})
+        issues.append({"Threat": "Security Logging and Monitoring", "Threat Severity": "Medium", "Message": "API function without usage logging detected"})
 
     return issues
 
