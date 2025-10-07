@@ -186,7 +186,7 @@ def sql_Injection_JS(code):
         issues.append({"Threat": "SQL Injection", "Threat Severity": "High", "Message": "Possible UNION SELECT statement detected"})
 
     if re.search(r"document\.getElementById\s*\(", code, re.IGNORECASE):
-        issues.append({"Threat": "XSS / DOM Injection", "Threat Severity": "Medium", "Message": "Direct DOM manipulation detected via getElementById"})
+        issues.append({"Threat": "XSS/DOM Injection", "Threat Severity": "Medium", "Message": "Direct DOM manipulation detected via getElementById"})
 
     if re.search(r"\.innerHTML\s*=", code, re.IGNORECASE):
         issues.append({"Threat": "XSS / DOM Injection", "Threat Severity": "Medium", "Message": "Possible DOM injection via innerHTML assignment"})
@@ -241,25 +241,25 @@ def Identification_and_Authentication_failures_JS(code):
     issues = []
 
     if re.search(r"password\.length\s*<\s*\d+", code, re.IGNORECASE):
-        issues.append({"Threat": "Weak Password Validation", "Threat Severity": "High", "Message": "Weak password length check detected"})
+        issues.append({"Threat": "Identification and Authentication failure", "Threat Severity": "High", "Message": "Weak password length check detected"})
 
     if re.search(r"/\^\.\*\[a-z\].+\$/", code, re.IGNORECASE):
-        issues.append({"Threat": "Weak Password Validation", "Threat Severity": "High", "Message": "Weak password regex detected"})
+        issues.append({"Threat": "Identification and Authentication failure", "Threat Severity": "High", "Message": "Weak password regex detected"})
 
     if re.search(r"localStorage\.setItem\(['\"]sessionToken", code, re.IGNORECASE):
-        issues.append({"Threat": "Insecure Session Handling", "Threat Severity": "Medium", "Message": "Session token stored in localStorage"})
+        issues.append({"Threat": "Identification and Authentication failure", "Threat Severity": "Medium", "Message": "Session token stored in localStorage"})
 
     if re.search(r"sessionStorage\.setItem", code, re.IGNORECASE):
-        issues.append({"Threat": "Insecure Session Handling", "Threat Severity": "Medium", "Message": "Session data stored insecurely"})
+        issues.append({"Threat": "Identification and Authentication failure", "Threat Severity": "Medium", "Message": "Session data stored insecurely"})
 
     if re.search(r"function\s+\w+\s*\(.*\)\s*\{[^}]*performOperation", code, re.IGNORECASE):
-        issues.append({"Threat": "Missing Authentication Checks", "Threat Severity": "High", "Message": "Operation without authentication check detected"})
+        issues.append({"Threat": "Identification and Authentication failure", "Threat Severity": "High", "Message": "Operation without authentication check detected"})
 
     if re.search(r"password\s*=\s*['\"].+['\"]", code, re.IGNORECASE):
-        issues.append({"Threat": "Password in Client-side Code", "Threat Severity": "High", "Message": "Password hardcoded in client-side code"})
+        issues.append({"Threat": "Identification and Authentication failure", "Threat Severity": "High", "Message": "Password hardcoded in client-side code"})
 
     if re.search(r"btoa\(", code, re.IGNORECASE):
-        issues.append({"Threat": "Insecure Token Handling", "Threat Severity": "Medium", "Message": "Weak token generation detected"})
+        issues.append({"Threat": "Identification and Authentication failure", "Threat Severity": "Medium", "Message": "Weak token generation detected"})
 
     return issues
 
@@ -267,19 +267,19 @@ def Software_and_Data_Integrity_JS(code):
     issues = []
 
     if re.search(r"<script\s+src=.*>", code, re.IGNORECASE) and not re.search(r"integrity\s*=", code, re.IGNORECASE):
-        issues.append({"Threat": "Missing Integrity Checks", "Threat Severity": "High", "Message": "External script without Subresource Integrity (SRI) detected"})
+        issues.append({"Threat": "Software and Data Integrity", "Threat Severity": "High", "Message": "External script without Subresource Integrity (SRI) detected"})
 
     if re.search(r"JSON\.parse\s*\(", code, re.IGNORECASE):
-        issues.append({"Threat": "Unsafe Deserialization", "Threat Severity": "High", "Message": "Deserialization of untrusted input detected"})
+        issues.append({"Threat": "Software and Data Integrity", "Threat Severity": "High", "Message": "Deserialization of untrusted input detected"})
 
     if re.search(r"eval\s*\(", code, re.IGNORECASE):
-        issues.append({"Threat": "Unsafe Deserialization", "Threat Severity": "High", "Message": "eval() usage detected — unsafe deserialization possible"})
+        issues.append({"Threat": "Software and Data Integrity", "Threat Severity": "High", "Message": "eval() usage detected — unsafe deserialization possible"})
 
     if re.search(r"require\s*\(\s*\w+\s*\)", code, re.IGNORECASE):
-        issues.append({"Threat": "Untrusted Plugin Loading", "Threat Severity": "High", "Message": "Dynamic plugin loading detected"})
+        issues.append({"Threat": "Software and Data Integrity", "Threat Severity": "High", "Message": "Dynamic plugin loading detected"})
 
     if re.search(r"document\.createElement\s*\(\s*['\"]script['\"]\s*\)", code, re.IGNORECASE):
-        issues.append({"Threat": "Dynamic Script Loading", "Threat Severity": "Medium", "Message": "Script dynamically created from untrusted source"})
+        issues.append({"Threat": "Software and Data Integrity", "Threat Severity": "Medium", "Message": "Script dynamically created from untrusted source"})
 
     return issues
 
