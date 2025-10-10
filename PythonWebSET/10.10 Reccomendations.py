@@ -64,9 +64,13 @@ Recs = {
 • <b>Enforce Subresource Integrity (SRI):</b> Require external scripts and stylesheets to include cryptographic integrity attributes (e.g., <code>sha384</code>) so browsers can verify authenticity before execution.<br/>
 """,
 
-    "Vulnerable and Outdated Components":"""
+    "Vulnerable/Outdated Components":"""
     
 """,
+"Server-Side Request Forgery":"""
+
+""",
+
 
 
 }
