@@ -39,6 +39,12 @@ tree.heading("Severity", text="Severity")
 tree.heading("Message", text="Message")
 tree.pack(fill="both", expand=True)
 
+# ------------- PDF Directory & Path --------------
+home_dir = os.path.expanduser("~")
+pdf_dir = f"{home_dir}/WebSET_Reports"
+os.makedirs(pdf_dir, exist_ok=True)
+pdf_path = f"{pdf_dir}/WebSET_Report.pdf"
+
 # ---------------- Chart ----------------
 chart_frame = tk.Frame(main_area, bg="white")
 chart_frame.pack(fill="both", expand=True, padx=20, pady=10)
@@ -100,14 +106,12 @@ def run_scan():
     # save chart and pdf
     chart_path = "severity_chart.png"
     fig.savefig(chart_path)
-    pdf_path = "WebSET_Report.pdf"
     generate_pdf(results, pdf_path=pdf_path, severity_chart_path=chart_path)
 
     print("PDF report saved to", pdf_path)
 
 
 def run_report():
-    pdf_path = "WebSET_Report.pdf"
     if os.path.exists(pdf_path):
         webbrowser.open_new(pdf_path)
         print("Opened", pdf_path)
