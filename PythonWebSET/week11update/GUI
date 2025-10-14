@@ -113,7 +113,7 @@ def run_scan():
 
 def run_report():
     if os.path.exists(pdf_path):
-        webbrowser.open_new(pdf_path)
+        webbrowser.open_new(f"file://{pdf_path}")
         print("Opened", pdf_path)
     else:
         print("No report found. Please run a scan first.")
