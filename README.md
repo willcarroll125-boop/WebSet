@@ -5,7 +5,8 @@ WebSET provides developers to perform targeted security testing directly within 
 **Detected Vulnerabilities**
 - Injection
 - Broken Access Control
-- Cryptographic failures
+- Cryptographic Failures
+- Insecure Design
 - Security Misconfiguration
 - Identity and Authentication Failures
 - Software and Data Integrity Failures
