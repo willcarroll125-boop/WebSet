@@ -77,7 +77,13 @@ Recs = {
 • <b>Avoid Following Redirects Blindly:</b> Do not follow redirects from user-supplied URLs unless each redirect target is revalidated against your allowlist, to eliminate the primary threat vector of SSRP which operates through redirect chains.<br/>
 • <b>Log and Monitor Suspicious Outbound Requests:</b> Log all server-side HTTP requests that are triggered by user input, and utilise SIEMs to monitor for unusual destinations, internal IPs, or metadata service access attempts. Particularly, use anomaly detection or rate-limiting to reduce exploitation attempts.<br/>
 """,
-
+"Security logging and Monitoring Failures":"""
+<b>Remediation for A09 predominantly places an emphasis on the logging of critical security events, which must also be monitored through tools such as Security Information and Event Management (SIEM) to detect and respond to threats in a timely manner. However, the data to be logged must also account for the following considerations to curb any risk associated with the logging system itself:</b><br/><br/>
+• <b>Log Security-Relevant Events Consistently:</b> Always log important events such as failed logins, access to sensitive endpoints, permission changes, and unexpected errors, in alignment with the who did what, when, and from where framework.<br/>
+• <b>Avoid Logging Sensitive Information:</b> Never log sensitive data such as passwords, API keys, tokens, or personal information. Always sanitise logs to prevent accidental data leaks or compliance violations.<br/>
+• <b>Implement Real-Time Alerting for Suspicious Activities:</b> Set up automated alerts for anomalies like repeated login failures, unusual access patterns, or privilege escalations, and ensure that they are routed to Security Analysts.<br/>
+• <b>Centralise and Secure Log Storage:</b> Use a centralised, tamper-resistant logging system to collect and store logs across services in alignment with log immutability standards. Additionally adjust log retention to allow for effective post-incident forensics, and also ensure compliance with industry standards and government regulations.<br/>
+""",
 
 
 }
