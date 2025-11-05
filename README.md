@@ -18,7 +18,7 @@ WebSET provides developers to perform targeted security testing directly within 
 - Python 3.10+
 
 **Installation and Launch Process**
-- Download WebSet/final repository to your project folder
+- Download WebSet/final files into your project folder
 - Navigate to your chosen python environment (Pycharm Recommended)
 - Ensure following libraries are installed: 'beautifulsoup4','matplotlib','reportlab'
 - Run GUI.py
