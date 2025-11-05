@@ -2,4 +2,14 @@ WebSET (Website Security Evaluation Tool) is a python based vulnerability scanne
 
 WebSET provides developers to perform targeted security testing directly within their development environment. Vulnerability detection is simplified by combining multiple testing capabilities into a single, automated framework. THe tool can be applied during or after development to reveal high-risk weaknesses and generate clear remediation advice
 
+**Detected Vulnerabilities**
+- Injection
+- Broken Access Control
+- Cryptographic failures
+- Security Misconfiguration
+- Identity and Authentication Failures
+- Software and Data Integrity Failures
+- Vulnerable and Outdated Components
+- Server-Side Request Forgery (SSRF)
 
+**Installation**
