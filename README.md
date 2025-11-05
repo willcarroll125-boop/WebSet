@@ -11,5 +11,18 @@ WebSET provides developers to perform targeted security testing directly within 
 - Software and Data Integrity Failures
 - Vulnerable and Outdated Components
 - Server-Side Request Forgery (SSRF)
+- Security logging and Monitoring Failures
 
-**Installation**
+**System Requirements**
+- Python 3.10+
+
+**Installation and Launch Process**
+- Download WebSet/final repository to your project folder
+- Navigate to your chosen python environment (Pycharm Recommended)
+- Ensure following libraries are installed: 'beautifulsoup4','matplotlib','reportlab'
+- Run GUI.py
+- Once GUI appears select 'Load File & Scan' and select file to be tested then 'Open'
+- See results summary
+- Select Load Report to view detailed results
+
+See demonstration:
